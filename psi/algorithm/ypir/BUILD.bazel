@@ -1,0 +1,275 @@
+# Copyright 2026 The secretflow authors.
+
+load("//bazel:psi.bzl", "psi_cc_library", "psi_cc_test")
+
+package(default_visibility = ["//visibility:public"])
+
+X86_64_COMPATIBLE = ["@platforms//cpu:x86_64"]
+
+psi_cc_library(
+    name = "legacy_ypir_impl",
+    srcs = [
+        "legacy/aes_prng.cc",
+        "legacy/client.cc",
+        "legacy/hexl.cc",
+        "legacy/server.cc",
+        "legacy/ypir_params.cc",
+        "legacy/ypir_util.cc",
+    ],
+    hdrs = [
+        "legacy/aes_prng.h",
+        "legacy/client.h",
+        "legacy/hexl.h",
+        "legacy/server.h",
+        "legacy/ypir_params.h",
+        "legacy/ypir_util.h",
+    ],
+    copts = ["-maes"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        "@hexl",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "legacy_simplepir",
+    srcs = [
+        "legacy/matmul.cpp",
+        "legacy/util.cc",
+    ],
+    hdrs = [
+        "legacy/types.h",
+        "legacy/util.h",
+    ],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        "//psi/algorithm/spiral:discrete_gaussian",
+        "//psi/algorithm/spiral:gadget",
+        "//psi/algorithm/spiral:params",
+        "//psi/algorithm/spiral:poly_matrix",
+        "//psi/algorithm/spiral:poly_matrix_utils",
+        "//psi/algorithm/spiral:util",
+        "@abseil-cpp//absl/types:span",
+        "@yacl//yacl/base:int128",
+        "@yacl//yacl/crypto/rand",
+        "@yacl//yacl/crypto/tools:prg",
+        "@yacl//yacl/utils:parallel",
+    ],
+)
+
+psi_cc_library(
+    name = "types",
+    hdrs = ["types.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+)
+
+psi_cc_library(
+    name = "params",
+    srcs = ["params.cc"],
+    hdrs = ["params.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":types",
+        "//psi/algorithm/spiral:params",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "util",
+    srcs = ["util.cc"],
+    hdrs = ["util.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":params",
+        "//psi/algorithm/spiral/arith",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "serialize",
+    srcs = ["serialize.cc"],
+    hdrs = ["serialize.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":types",
+        "@yacl//yacl/base:buffer",
+        "@yacl//yacl/base:byte_container_view",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "ypir_internal_params",
+    srcs = ["ypir_internal_params.cc"],
+    hdrs = ["ypir_internal_params.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":legacy_ypir_impl",
+        ":params",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "ypir_internal_client",
+    srcs = ["ypir_internal_client.cc"],
+    hdrs = ["ypir_internal_client.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":legacy_ypir_impl",
+        ":types",
+        ":util",
+        ":ypir_internal_params",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "ypir_internal_server",
+    srcs = ["ypir_internal_server.cc"],
+    hdrs = ["ypir_internal_server.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":legacy_ypir_impl",
+        ":types",
+        ":ypir_internal_params",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "client",
+    srcs = ["client.cc"],
+    hdrs = ["client.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":params",
+        ":serialize",
+        ":util",
+        ":ypir_internal_client",
+        "//psi/algorithm/pir_interface:index_pir",
+        "//psi/algorithm/pir_interface:pir_db",
+        "@yacl//yacl/base:buffer",
+        "@yacl//yacl/base:byte_container_view",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "server",
+    srcs = ["server.cc"],
+    hdrs = ["server.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":legacy_simplepir",
+        ":params",
+        ":serialize",
+        ":ypir_internal_server",
+        "//psi/algorithm/pir_interface:pir_db",
+        "@yacl//yacl/base:buffer",
+        "@yacl//yacl/base:byte_container_view",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "entry",
+    srcs = ["entry.cc"],
+    hdrs = ["entry.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":client",
+        ":params",
+        ":server",
+        "//psi/algorithm/pir_interface:pir_db",
+        "@abseil-cpp//absl/strings",
+        "@yacl//yacl/link:context",
+    ],
+)
+
+psi_cc_test(
+    name = "smoke_test",
+    srcs = ["smoke_test.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":client",
+        ":server",
+    ],
+)
+
+psi_cc_test(
+    name = "params_test",
+    srcs = ["params_test.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [":params"],
+)
+
+psi_cc_test(
+    name = "serialize_test",
+    srcs = ["serialize_test.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [":serialize"],
+)
+
+psi_cc_test(
+    name = "client_test",
+    srcs = ["client_test.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":client",
+        ":serialize",
+        ":server",
+    ],
+)
+
+psi_cc_test(
+    name = "server_test",
+    srcs = ["server_test.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [":server"],
+)
+
+psi_cc_test(
+    name = "pir_interface_test",
+    srcs = ["pir_interface_test.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":client",
+        ":server",
+        "//psi/algorithm/pir_interface:index_pir",
+    ],
+)
+
+psi_cc_test(
+    name = "simplepir_flow_test",
+    srcs = ["simplepir_flow_test.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":client",
+        ":server",
+    ],
+)
+
+psi_cc_test(
+    name = "ypir_flow_test",
+    srcs = ["ypir_flow_test.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":client",
+        ":server",
+    ],
+)
+
+psi_cc_test(
+    name = "entry_test",
+    srcs = ["entry_test.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":entry",
+        "@abseil-cpp//absl/strings",
+        "@yacl//yacl/link:test_util",
+    ],
+)
