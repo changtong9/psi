@@ -65,11 +65,34 @@ psi_cc_library(
 )
 
 psi_cc_library(
+    name = "launch_inspire",
+    srcs = select({
+        "@platforms//cpu:x86_64": ["inspire_launch.cc"],
+        "//conditions:default": ["inspire_launch_stub.cc"],
+    }),
+    hdrs = ["inspire_launch.h"],
+    deps = select({
+        "@platforms//cpu:x86_64": [
+            "//psi/algorithm/inspire:entry",
+            "//psi/proto:pir_cc_proto",
+            "@yacl//yacl/base:exception",
+            "@yacl//yacl/link:context",
+        ],
+        "//conditions:default": [
+            "//psi/proto:pir_cc_proto",
+            "@yacl//yacl/base:exception",
+            "@yacl//yacl/link:context",
+        ],
+    }),
+)
+
+psi_cc_library(
     name = "launch",
     srcs = ["launch.cc"],
     hdrs = ["launch.h"],
     deps = [
         ":factory",
+        ":launch_inspire",
         ":launch_ypir",
         ":report",
         "//psi:trace_categories",
@@ -101,6 +124,17 @@ psi_cc_test(
     target_compatible_with = ["@platforms//cpu:x86_64"],
     deps = [
         ":launch_ypir",
+        "@abseil-cpp//absl/strings",
+        "@yacl//yacl/link:test_util",
+    ],
+)
+
+psi_cc_test(
+    name = "inspire_test",
+    srcs = ["inspire_test.cc"],
+    target_compatible_with = ["@platforms//cpu:x86_64"],
+    deps = [
+        ":launch_inspire",
         "@abseil-cpp//absl/strings",
         "@yacl//yacl/link:test_util",
     ],

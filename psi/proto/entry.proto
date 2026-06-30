@@ -51,5 +51,9 @@ message LaunchConfig {
     YpirSenderConfig ypir_sender_config = 10;
 
     YpirReceiverConfig ypir_receiver_config = 11;
+
+    InspireSenderConfig inspire_sender_config = 12;
+
+    InspireReceiverConfig inspire_receiver_config = 13;
   }
 }
