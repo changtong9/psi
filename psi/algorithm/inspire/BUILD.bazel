@@ -1,0 +1,187 @@
+# Copyright 2026 The secretflow authors.
+
+load("//bazel:psi.bzl", "psi_cc_binary", "psi_cc_library", "psi_cc_test")
+
+package(default_visibility = ["//visibility:public"])
+
+X86_64_COMPATIBLE = ["@platforms//cpu:x86_64"]
+
+psi_cc_library(
+    name = "types",
+    hdrs = ["types.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+)
+
+psi_cc_library(
+    name = "params",
+    hdrs = ["params.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = ["//psi/algorithm/ypir:params"],
+)
+
+psi_cc_library(
+    name = "serialize",
+    srcs = ["serialize.cc"],
+    hdrs = ["serialize.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":types",
+        "@yacl//yacl/base:buffer",
+        "@yacl//yacl/base:byte_container_view",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "internal_primitives",
+    srcs = ["internal_primitives.cc"],
+    hdrs = ["internal_primitives.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        "//psi/algorithm/ypir:legacy_ypir_impl",
+        "//psi/algorithm/ypir:params",
+        "//psi/algorithm/ypir:ypir_internal_params",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "internal",
+    srcs = ["internal.cc"],
+    hdrs = ["internal.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":types",
+        "//psi/algorithm/ypir:legacy_ypir_impl",
+        "//psi/algorithm/ypir:params",
+        "//psi/algorithm/ypir:util",
+        "//psi/algorithm/ypir:ypir_internal_params",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "large_record_he",
+    srcs = ["large_record_he.cc"],
+    hdrs = ["large_record_he.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        "@hexl",
+    ],
+)
+
+psi_cc_library(
+    name = "large_record",
+    srcs = ["large_record.cc"],
+    hdrs = ["large_record.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":internal_primitives",
+        ":large_record_he",
+        ":types",
+        "//psi/algorithm/ypir:legacy_ypir_impl",
+        "//psi/algorithm/ypir:ypir_internal_params",
+        "@hexl",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "client",
+    srcs = ["client.cc"],
+    hdrs = ["client.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":internal",
+        ":params",
+        ":serialize",
+        ":types",
+        "//psi/algorithm/pir_interface:index_pir",
+        "//psi/algorithm/pir_interface:pir_db",
+        "//psi/algorithm/ypir:ypir_internal_params",
+        "@yacl//yacl/base:buffer",
+        "@yacl//yacl/base:byte_container_view",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "server",
+    srcs = ["server.cc"],
+    hdrs = ["server.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":internal",
+        ":params",
+        ":serialize",
+        ":types",
+        "//psi/algorithm/pir_interface:pir_db",
+        "//psi/algorithm/ypir:ypir_internal_params",
+        "@yacl//yacl/base:buffer",
+        "@yacl//yacl/base:byte_container_view",
+        "@yacl//yacl/base:exception",
+    ],
+)
+
+psi_cc_library(
+    name = "entry",
+    srcs = ["entry.cc"],
+    hdrs = ["entry.h"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":client",
+        ":params",
+        ":server",
+        "//psi/algorithm/pir_interface:pir_db",
+        "@abseil-cpp//absl/strings",
+        "@yacl//yacl/base:buffer",
+        "@yacl//yacl/base:byte_container_view",
+        "@yacl//yacl/base:exception",
+        "@yacl//yacl/link:context",
+    ],
+)
+
+psi_cc_binary(
+    name = "inspire_flow_smoke",
+    srcs = ["inspire_flow_smoke.cc"],
+    linkstatic = True,
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":internal",
+        ":params",
+        "//psi/algorithm/ypir:ypir_internal_params",
+    ],
+)
+
+psi_cc_test(
+    name = "inspire_flow_test",
+    srcs = ["inspire_flow_smoke.cc"],
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":internal",
+        ":params",
+        "//psi/algorithm/ypir:ypir_internal_params",
+    ],
+)
+
+psi_cc_binary(
+    name = "large_record_flow_smoke",
+    srcs = ["large_record_flow_smoke.cc"],
+    linkstatic = True,
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":large_record",
+        ":types",
+    ],
+)
+
+psi_cc_binary(
+    name = "large_record_full_test",
+    srcs = ["large_record_full_test.cc"],
+    linkstatic = True,
+    target_compatible_with = X86_64_COMPATIBLE,
+    deps = [
+        ":large_record",
+        ":types",
+    ],
+)

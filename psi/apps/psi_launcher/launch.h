@@ -53,6 +53,12 @@ PirResultReport RunPir(const YpirReceiverConfig& ypir_receiver_config,
 PirResultReport RunPir(const YpirSenderConfig& ypir_sender_config,
                        const std::shared_ptr<yacl::link::Context>& lctx);
 
+PirResultReport RunPir(const InspireReceiverConfig& inspire_receiver_config,
+                       const std::shared_ptr<yacl::link::Context>& lctx);
+
+PirResultReport RunPir(const InspireSenderConfig& inspire_sender_config,
+                       const std::shared_ptr<yacl::link::Context>& lctx);
+
 PirResultReport RunDkPir(const DkPirReceiverConfig& dk_pir_receiver_config,
                          const std::shared_ptr<yacl::link::Context>& lctx);
 
